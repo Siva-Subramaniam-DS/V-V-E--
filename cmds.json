@@ -1,0 +1,152 @@
+{
+  "mc_cmds": {
+    "help_command": [
+      "tree.command(name='help', description='Show available commands based on your permissions')"
+    ],
+    "staff_leaderboard": [
+      "tree.command(name='staff-leaderboard', description='Display staff leaderboard showing most active judges and recorders')"
+    ],
+    "staff_update": [
+      "tree.command(name='staff-update', description=\"Update a staff member's match count in the leaderboard\")",
+      "app_commands.describe(staff_member='The staff member to update', role='Role to update (judge or recorder)', action='Add, Subtract, or Set the count', amount='The number of matches to add, subtract, or set to')",
+      "app_commands.choices(role=[app_commands.Choice(name='Judge', value='judge'), app_commands.Choice(name='Recorder', value='recorder')], action=[app_commands.Choice(name='Add (+)', value='add'), app_commands.Choice(name='Subtract (-)', value='subtract'), app_commands.Choice(name='Set (=)', value='set')])"
+    ],
+    "info_command": [
+      "tree.command(name='info', description='Display bot information and statistics')"
+    ],
+    "rules_command": [
+      "tree.command(name='rules', description='Manage or view tournament rules')"
+    ],
+    "team_balance": [
+      "tree.command(name='team_balance', description='Balance two teams based on player levels')",
+      "app_commands.describe(levels='Comma-separated player levels (e.g. 48,50,51,35,51,50,50,37,51,52)')"
+    ],
+    "create": [
+      "events_group.command(name='create', description='Create an event.')",
+      "app_commands.describe(team1='Name of Team 1', team2='Name of Team 2', captain1='Mention Captain of Team 1', captain2='Mention Captain of Team 2', hour='Hour of the event (0-23)', minute='Minute of the event (0-59)', date='Date of the event', month='Month of the event', round='Round label', tournament='Tournament name (e.g. King of the Seas, Summer Cup, etc.)', group='Group assignment (A-J) or Winner/Loser')",
+      "app_commands.choices(round=[app_commands.Choice(name='R1', value='R1'), app_commands.Choice(name='R2', value='R2'), app_commands.Choice(name='R3', value='R3'), app_commands.Choice(name='R4', value='R4'), app_commands.Choice(name='R5', value='R5'), app_commands.Choice(name='R6', value='R6'), app_commands.Choice(name='R7', value='R7'), app_commands.Choice(name='R8', value='R8'), app_commands.Choice(name='R9', value='R9'), app_commands.Choice(name='R10', value='R10'), app_commands.Choice(name='Qualifier', value='Qualifier'), app_commands.Choice(name='Semi Final', value='Semi Final'), app_commands.Choice(name='3rd Place', value='3rd Place'), app_commands.Choice(name='Final', value='Final')], group=[app_commands.Choice(name='Group A', value='Group A'), app_commands.Choice(name='Group B', value='Group B'), app_commands.Choice(name='Group C', value='Group C'), app_commands.Choice(name='Group D', value='Group D'), app_commands.Choice(name='Group E', value='Group E'), app_commands.Choice(name='Group F', value='Group F'), app_commands.Choice(name='Group G', value='Group G'), app_commands.Choice(name='Group H', value='Group H'), app_commands.Choice(name='Group I', value='Group I'), app_commands.Choice(name='Group J', value='Group J'), app_commands.Choice(name='Winner', value='Winner'), app_commands.Choice(name='Loser', value='Loser')])"
+    ],
+    "event_result": [
+      "tree.command(name='event-result', description='Add event results.')",
+      "app_commands.describe(team_1='Name of Team 1', team_1_captain='Captain of Team 1', team_1_score='Score for Team 1', team_2='Name of Team 2', team_2_captain='Captain of Team 2', team_2_score='Score for Team 2', number_of_matches='Total number of matches played', remarks='Remarks about the match', ss_1='Screenshot 1', ss_2='Screenshot 2', ss_3='Screenshot 3', ss_4='Screenshot 4', ss_5='Screenshot 5', ss_6='Screenshot 6', ss_7='Screenshot 7', ss_8='Screenshot 8', ss_9='Screenshot 9', ss_10='Screenshot 10', ss_11='Screenshot 11')"
+    ],
+    "time": [
+      "tree.command(name='time', description='Get a random match time from fixed 30-min slots (12:00-17:00 UTC)')"
+    ],
+    "unassigned_events": [
+      "tree.command(name='unassigned_events', description='List events without a judge assigned (Judges/Organizers)')"
+    ],
+    "delete": [
+      "events_group.command(name='delete', description='Delete a scheduled event.')"
+    ],
+    "edit": [
+      "events_group.command(name='edit', description='Edit an event. Select an event by title or edit the one in this channel.')",
+      "app_commands.describe(title='Search for event to edit or enter a new tournament name', captain1='New Team 1 Captain', captain2='New Team 2 Captain', team1='Update Team 1 Name', team2='Update Team 2 Name', hour='Update Hour (0-23)', minute='Update Minute (0-59)', date='Update Date', month='Update Month', round='Update Round', group='Update Group')",
+      "app_commands.choices(round=[app_commands.Choice(name='R1', value='R1'), app_commands.Choice(name='R2', value='R2'), app_commands.Choice(name='R3', value='R3'), app_commands.Choice(name='R4', value='R4'), app_commands.Choice(name='R5', value='R5'), app_commands.Choice(name='R6', value='R6'), app_commands.Choice(name='R7', value='R7'), app_commands.Choice(name='R8', value='R8'), app_commands.Choice(name='R9', value='R9'), app_commands.Choice(name='R10', value='R10'), app_commands.Choice(name='Qualifier', value='Qualifier'), app_commands.Choice(name='Semi Final', value='Semi Final'), app_commands.Choice(name='3rd Place', value='3rd Place'), app_commands.Choice(name='Final', value='Final')], group=[app_commands.Choice(name='Group A', value='Group A'), app_commands.Choice(name='Group B', value='Group B'), app_commands.Choice(name='Group C', value='Group C'), app_commands.Choice(name='Group D', value='Group D'), app_commands.Choice(name='Group E', value='Group E'), app_commands.Choice(name='Group F', value='Group F'), app_commands.Choice(name='Group G', value='Group G'), app_commands.Choice(name='Group H', value='Group H'), app_commands.Choice(name='Group I', value='Group I'), app_commands.Choice(name='Group J', value='Group J'), app_commands.Choice(name='Winner', value='Winner'), app_commands.Choice(name='Loser', value='Loser')])"
+    ],
+    "general_tie_breaker": [
+      "tree.command(name='general_tie_breaker', description='To break a tie between two teams using the highest total score')",
+      "app_commands.describe(tm1_name='Name of the first team. By default, it is Alpha', tm1_pl1_score='Score of the first player of the first team', tm1_pl2_score='Score of the second player of the first team', tm1_pl3_score='Score of the third player of the first team', tm1_pl4_score='Score of the fourth player of the first team', tm1_pl5_score='Score of the fifth player of the first team', tm2_name='Name of the second team. By default, it is Bravo', tm2_pl1_score='Score of the first player of the second team', tm2_pl2_score='Score of the second player of the second team', tm2_pl3_score='Score of the third player of the second team', tm2_pl4_score='Score of the fourth player of the second team', tm2_pl5_score='Score of the fifth player of the second team')"
+    ],
+    "add_captain": [
+      "tree.command(name='add_captain', description='Add two captains to a tournament match and rename the channel')",
+      "app_commands.describe(round='Round of the tournament (R1-R10, Q, SF, Final)', captain1='Captain of Team 1 (required)', captain2='Captain of Team 2 (required)', team1=\"Team 1 name (optional \u2014 leave blank to use Captain 1's name)\", team2=\"Team 2 name (optional \u2014 leave blank to use Captain 2's name)\", bracket='Optional bracket identifier (e.g., A, B, Winner, Loser)')",
+      "app_commands.choices(round=[app_commands.Choice(name='R1', value='R1'), app_commands.Choice(name='R2', value='R2'), app_commands.Choice(name='R3', value='R3'), app_commands.Choice(name='R4', value='R4'), app_commands.Choice(name='R5', value='R5'), app_commands.Choice(name='R6', value='R6'), app_commands.Choice(name='R7', value='R7'), app_commands.Choice(name='R8', value='R8'), app_commands.Choice(name='R9', value='R9'), app_commands.Choice(name='R10', value='R10'), app_commands.Choice(name='Qualifier', value='Q'), app_commands.Choice(name='Semi Final', value='SF'), app_commands.Choice(name='3rd Place', value='3rd Place'), app_commands.Choice(name='Final', value='Final')])"
+    ],
+    "maps": [
+      "tree.command(name='maps', description='Randomly select 3, 5, or 7 maps for gameplay')",
+      "app_commands.describe(count='Number of maps to select (3, 5, or 7)')"
+    ],
+    "test_channels": [
+      "tree.command(name='test_channels', description='Test if bot can access configured channels (Organizer only)')"
+    ],
+    "choose": [
+      "tree.command(name='choose', description='Randomly choose from a list of options')",
+      "app_commands.describe(options='List of options separated by commas')"
+    ],
+    "exchange": [
+      "tree.command(name='exchange', description='Exchange a Judge or Recorder for an event')",
+      "app_commands.describe(role='Role to exchange', old_user='The old staff member removing access from', new_user='The new staff member granting access to')",
+      "app_commands.choices(role=[app_commands.Choice(name='Judge', value='judge'), app_commands.Choice(name='Recorder', value='recorder')])"
+    ],
+    "tournament_start": [
+      "tree.command(name='tournament-start', description='Start tournament matches and create tickets for open matches')",
+      "app_commands.describe(tournament_name='Name of the tournament (optional override)')"
+    ],
+    "tournament_setup": [
+      "tree.command(name='tournament-setup', description='Wipe all old data and set up for a new tournament (Bot Owner Only)')",
+      "app_commands.describe(bracket_link='The official bracket link for the new tournament', bracket_api_key='The Bracket API Key for the tournament', google_sheet_link='The Google Sheet Link for the tournament', tournament_name='Name of the new tournament')"
+    ]
+  },
+  "app_cmds": {
+    "help_command": [
+      "tree.command(name='help', description='Show available commands based on your permissions')"
+    ],
+    "staff_leaderboard": [
+      "tree.command(name='staff-leaderboard', description='Display the staff activity leaderboard')"
+    ],
+    "info_command": [
+      "tree.command(name='info', description='Display bot information and statistics')"
+    ],
+    "rules_command": [
+      "tree.command(name='rules', description='Manage or view tournament rules')"
+    ],
+    "team_balance": [
+      "tree.command(name='team_balance', description='Balance two teams based on player levels')",
+      "app_commands.describe(levels='Comma-separated player levels (e.g. 48,50,51,35,51,50,50,37,51,52)')"
+    ],
+    "event": [
+      "tree.command(name='event', description='Event management commands')",
+      "app_commands.describe(action='Select the event action to perform')",
+      "app_commands.choices(action=[app_commands.Choice(name='create', value='create'), app_commands.Choice(name='result', value='result')])"
+    ],
+    "event_create": [
+      "tree.command(name='event-create', description='Creates an event (Head Organizer/Head Helper/Helper Team only)')",
+      "app_commands.describe(team_1_captain='Captain of team 1', team_2_captain='Captain of team 2', hour='Hour of the event (0-23)', minute='Minute of the event (0-59)', date='Date of the event', month='Month of the event', round='Round label', tournament='Tournament name (e.g. King of the Seas, Summer Cup, etc.)', group='Group assignment (A-J) or Winner/Loser')",
+      "app_commands.choices(round=[app_commands.Choice(name='R1', value='R1'), app_commands.Choice(name='R2', value='R2'), app_commands.Choice(name='R3', value='R3'), app_commands.Choice(name='R4', value='R4'), app_commands.Choice(name='R5', value='R5'), app_commands.Choice(name='R6', value='R6'), app_commands.Choice(name='R7', value='R7'), app_commands.Choice(name='R8', value='R8'), app_commands.Choice(name='R9', value='R9'), app_commands.Choice(name='R10', value='R10'), app_commands.Choice(name='Qualifier', value='Qualifier'), app_commands.Choice(name='Semi Final', value='Semi Final'), app_commands.Choice(name='3rd Place', value='3rd Place'), app_commands.Choice(name='Final', value='Final')], group=[app_commands.Choice(name='Group A', value='Group A'), app_commands.Choice(name='Group B', value='Group B'), app_commands.Choice(name='Group C', value='Group C'), app_commands.Choice(name='Group D', value='Group D'), app_commands.Choice(name='Group E', value='Group E'), app_commands.Choice(name='Group F', value='Group F'), app_commands.Choice(name='Group G', value='Group G'), app_commands.Choice(name='Group H', value='Group H'), app_commands.Choice(name='Group I', value='Group I'), app_commands.Choice(name='Group J', value='Group J'), app_commands.Choice(name='Winner', value='Winner'), app_commands.Choice(name='Loser', value='Loser')])"
+    ],
+    "event_result": [
+      "tree.command(name='event-result', description='Add event results (Head Organizer/Judge only)')",
+      "app_commands.describe(winner='Winner of the event', winner_score=\"Winner's score\", loser='Loser of the event', loser_score=\"Loser's score\", tournament='Tournament name (e.g., The Zumwalt S2)', round='Round name (e.g., Semi-Final, Final, Quarter-Final)', group='Group assignment (A-J) - optional', remarks='Remarks about the match (e.g., ggwp, close match)', recorder='Staff member who recorded the match (optional)', ss_1='Screenshot 1 (upload)', ss_2='Screenshot 2 (upload)', ss_3='Screenshot 3 (upload)', ss_4='Screenshot 4 (upload)', ss_5='Screenshot 5 (upload)', ss_6='Screenshot 6 (upload)', ss_7='Screenshot 7 (upload)', ss_8='Screenshot 8 (upload)', ss_9='Screenshot 9 (upload)', ss_10='Screenshot 10 (upload)', ss_11='Screenshot 11 (upload)')",
+      "app_commands.choices(group=[app_commands.Choice(name='Group A', value='Group A'), app_commands.Choice(name='Group B', value='Group B'), app_commands.Choice(name='Group C', value='Group C'), app_commands.Choice(name='Group D', value='Group D'), app_commands.Choice(name='Group E', value='Group E'), app_commands.Choice(name='Group F', value='Group F'), app_commands.Choice(name='Group G', value='Group G'), app_commands.Choice(name='Group H', value='Group H'), app_commands.Choice(name='Group I', value='Group I'), app_commands.Choice(name='Group J', value='Group J'), app_commands.Choice(name='Winner', value='Winner'), app_commands.Choice(name='Loser', value='Loser')])"
+    ],
+    "time": [
+      "tree.command(name='time', description='Get a random match time from fixed 30-min slots (12:00-17:00 UTC)')"
+    ],
+    "unassigned_events": [
+      "tree.command(name='unassigned_events', description='List events without a judge assigned (Judges/Organizers)')"
+    ],
+    "event_delete": [
+      "tree.command(name='event-delete', description='Delete a scheduled event (Head Organizer/Head Helper/Helper Team only)')"
+    ],
+    "exchange_judge": [
+      "tree.command(name='exchange_judge', description='Exchange an old judge for a new judge for event(s) in this channel')",
+      "app_commands.describe(old_judge='The current judge to replace', new_judge='The new judge to assign')"
+    ],
+    "event_edit": [
+      "tree.command(name='event-edit', description='Edit the event in this ticket channel (Head Organizer/Head Helper/Helper Team only)')",
+      "app_commands.describe(team_1_captain='Captain of team 1 (optional)', team_2_captain='Captain of team 2 (optional)', hour='Hour of the event (0-23) (optional)', minute='Minute of the event (0-59) (optional)', date='Date of the event (optional)', month='Month of the event (optional)', round='Round label (optional)', tournament='Tournament name (optional)', group='Group assignment (A-J) or Winner/Loser (optional)')",
+      "app_commands.choices(round=[app_commands.Choice(name='R1', value='R1'), app_commands.Choice(name='R2', value='R2'), app_commands.Choice(name='R3', value='R3'), app_commands.Choice(name='R4', value='R4'), app_commands.Choice(name='R5', value='R5'), app_commands.Choice(name='R6', value='R6'), app_commands.Choice(name='R7', value='R7'), app_commands.Choice(name='R8', value='R8'), app_commands.Choice(name='R9', value='R9'), app_commands.Choice(name='R10', value='R10'), app_commands.Choice(name='Qualifier', value='Qualifier'), app_commands.Choice(name='Semi Final', value='Semi Final'), app_commands.Choice(name='3rd Place', value='3rd Place'), app_commands.Choice(name='Final', value='Final')], group=[app_commands.Choice(name='Group A', value='Group A'), app_commands.Choice(name='Group B', value='Group B'), app_commands.Choice(name='Group C', value='Group C'), app_commands.Choice(name='Group D', value='Group D'), app_commands.Choice(name='Group E', value='Group E'), app_commands.Choice(name='Group F', value='Group F'), app_commands.Choice(name='Group G', value='Group G'), app_commands.Choice(name='Group H', value='Group H'), app_commands.Choice(name='Group I', value='Group I'), app_commands.Choice(name='Group J', value='Group J'), app_commands.Choice(name='Winner', value='Winner'), app_commands.Choice(name='Loser', value='Loser')])"
+    ],
+    "general_tie_breaker": [
+      "tree.command(name='general_tie_breaker', description='To break a tie between two teams using the highest total score')",
+      "app_commands.describe(tm1_name='Name of the first team. By default, it is Alpha', tm1_pl1_score='Score of the first player of the first team', tm1_pl2_score='Score of the second player of the first team', tm1_pl3_score='Score of the third player of the first team', tm1_pl4_score='Score of the fourth player of the first team', tm1_pl5_score='Score of the fifth player of the first team', tm2_name='Name of the second team. By default, it is Bravo', tm2_pl1_score='Score of the first player of the second team', tm2_pl2_score='Score of the second player of the second team', tm2_pl3_score='Score of the third player of the second team', tm2_pl4_score='Score of the fourth player of the second team', tm2_pl5_score='Score of the fifth player of the second team')"
+    ],
+    "add_captain": [
+      "tree.command(name='add_captain', description='Add two captains to a tournament match and rename the channel')",
+      "app_commands.describe(round='Round of the tournament (R1-R10, Q, SF, Final)', captain1='First captain/team for the match', captain2='Second captain/team for the match', bracket='Optional bracket identifier (e.g., A, B, Winner, Loser)')",
+      "app_commands.choices(round=[app_commands.Choice(name='R1', value='R1'), app_commands.Choice(name='R2', value='R2'), app_commands.Choice(name='R3', value='R3'), app_commands.Choice(name='R4', value='R4'), app_commands.Choice(name='R5', value='R5'), app_commands.Choice(name='R6', value='R6'), app_commands.Choice(name='R7', value='R7'), app_commands.Choice(name='R8', value='R8'), app_commands.Choice(name='R9', value='R9'), app_commands.Choice(name='R10', value='R10'), app_commands.Choice(name='Qualifier', value='Q'), app_commands.Choice(name='Semi Final', value='SF'), app_commands.Choice(name='3rd Place', value='3rd Place'), app_commands.Choice(name='Final', value='Final')])"
+    ],
+    "maps": [
+      "tree.command(name='maps', description='Randomly select 3, 5, or 7 maps for gameplay')",
+      "app_commands.describe(count='Number of maps to select (3, 5, or 7)')"
+    ],
+    "test_channels": [
+      "tree.command(name='test_channels', description='Test if bot can access configured channels (Organizer only)')"
+    ],
+    "choose": [
+      "tree.command(name='choose', description='Randomly choose from a list of options')",
+      "app_commands.describe(options='List of options separated by commas')"
+    ]
+  }
+}
