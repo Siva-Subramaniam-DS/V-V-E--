@@ -56,8 +56,9 @@ DEFAULT_CHANNEL_IDS = {
     "deadlines": 1492565975847932104,
     "participants_list": 1492565809631989904,
     "event_videos": 1492722253417283644,
-    "category_1": 1492741849188929658,
-    "category_2": 1492741948342272000
+    "category_1": 1492915175836221532,
+    "category_2": 1492915301602430996,
+    "closed_tickets_category": 1492915418556268605
 }
 
 DEFAULT_ROLE_IDS = {
@@ -3792,8 +3793,8 @@ async def tournament_start(interaction: discord.Interaction, tournament_name: Op
     await interaction.edit_original_response(embed=progress)
 
     # ── Step 4: Create channels ───────────────────────────────────────
-    primary_category_id = 1485196564698890330
-    backup_category_id = 1485217715449892925
+    primary_category_id = CHANNEL_IDS.get("category_1", 1492915175836221532)
+    backup_category_id = CHANNEL_IDS.get("category_2", 1492915301602430996)
     
     cat_primary = discord.utils.get(interaction.guild.categories, id=primary_category_id)
     cat_backup = discord.utils.get(interaction.guild.categories, id=backup_category_id)
@@ -4229,7 +4230,7 @@ async def publish_rules(interaction: discord.Interaction):
 
 @tree.command(name='find-tickets', description='Secret debug command to find where tickets live')
 async def find_tickets(interaction: discord.Interaction):
-    category_id = 1485196564698890330
+    category_id = CHANNEL_IDS.get("category_1", 1492915175836221532)
     lines = []
     
     cat = discord.utils.get(interaction.guild.categories, id=category_id)
@@ -4263,8 +4264,8 @@ async def auto_create_open_tickets(guild: discord.Guild, user: discord.Member):
     if err2:
         return
 
-    cat_primary = discord.utils.get(guild.categories, id=1485196564698890330)
-    cat_backup = discord.utils.get(guild.categories, id=1485217715449892925)
+    cat_primary = discord.utils.get(guild.categories, id=CHANNEL_IDS.get("category_1", 1492915175836221532))
+    cat_backup = discord.utils.get(guild.categories, id=CHANNEL_IDS.get("category_2", 1492915301602430996))
     if not cat_primary and not cat_backup:
         return
 
