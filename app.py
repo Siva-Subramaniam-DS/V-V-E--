@@ -42,32 +42,32 @@ try:
 except Exception as e:
     print(f"Firebase initialization failed (falling back to local JSON): {e}")
 
-# Default Configs
+# Default Configs — Ghost Fleet GR
 DEFAULT_CHANNEL_IDS = {
-    "take_schedule": 1492565951886135577,  # SCHEDULES
-    "results": 1492565931522785511,        # MATCH RESULT
-    "transcript": 1492565906046455949,     # TOUR SUPPORT TICKET (fallback)
-    "staff_attendance": 1197214718713155595,
-    "announcement": 1492564923031748688,
-    "tour_chat": 1492565999721910434,
-    "registration": 1492569389399150592,
-    "rules": 1492565754137149491,
-    "bracket": 1492565717633990919,
-    "deadlines": 1492565975847932104,
-    "participants_list": 1492565809631989904,
-    "event_videos": 1492722253417283644,
-    "category_1": 1492915175836221532,
-    "category_2": 1492915301602430996,
-    "closed_tickets_category": 1492915418556268605
+    "take_schedule": 1493422902547185705,   # TAKE SCHEDULE
+    "results": 1493422902547185705,         # MATCH RESULT (reuse take_schedule until dedicated is set)
+    "transcript": 1493422861405388950,      # TOUR SUPPORT TICKET (transcript)
+    "staff_attendance": 1493423298724233287, # ATTENDANCE
+    "announcement": 1493371443445108857,    # DEADLINES channel (closest to announcement)
+    "tour_chat": 1493422902547185705,       # Take schedule channel
+    "registration": 1493371304860979434,    # RULES channel (placeholder)
+    "rules": 1493371304860979434,           # RULES
+    "bracket": 1493371371504275659,         # BRACKET
+    "deadlines": 1493371443445108857,       # DEADLINE
+    "participants_list": 1493371304860979434,
+    "event_videos": 1493422902547185705,
+    "category_1": 1493422365902897194,      # Category 1
+    "category_2": 1493422524967686184,      # Category 2
+    "closed_tickets_category": 1493423252658323598  # Closed Tickets
 }
 
 DEFAULT_ROLE_IDS = {
-    "judge": 1492727793631498351,          # Tournament Judge
-    "recorder": 1492727854406959115,       # Tournament Recorder
-    "head_helper": 1492730906056855773,    # Tour helper (fallback for both)
-    "helper_team": 1492730906056855773,    # Tour helper
-    "head_organizer": 1457369462931062947, # Tour organiser
-    "staff": 1492727567554183318           # Tournament staff
+    "judge": 1493380731601424528,           # Tour Judge
+    "recorder": 1493380303098740816,        # Tour Recorder
+    "head_helper": 1493420982613053520,     # Tour helper
+    "helper_team": 1493420982613053520,     # Tour helper
+    "head_organizer": 1493380182285881354,  # Tour Organiser
+    "staff": 1493380182285881354            # Staff (fallback to organiser)
 }
 
 CHANNEL_IDS = DEFAULT_CHANNEL_IDS.copy()
@@ -76,13 +76,21 @@ ROLE_IDS = DEFAULT_ROLE_IDS.copy()
 # Bot Owner ID for special permissions
 BOT_OWNER_ID = 1251442077561131059
 
-# Branding constants
-ORGANIZATION_NAME = "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ"
-TOURNAMENT_SYSTEM_NAME = "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ Tournament System"
-BRACKET_LINK = ""
+# Branding constants — Ghost Fleet GR
+ORGANIZATION_NAME = "Ghost Fleet GR"
+TOURNAMENT_SYSTEM_NAME = "Ghost Fleet GR Tournament System"
+BRACKET_LINK = "https://discord.com/channels/1084589736917737522/1493371371504275659"
 BRACKET_API_KEY = ""
 GOOGLE_SHEET_LINK = ""
 CURRENT_TOURNAMENT_NAME = ""
+
+# Key channel links for embeds
+LINK_BRACKET = "https://discord.com/channels/1084589736917737522/1493371371504275659"
+LINK_DEADLINE = "https://discord.com/channels/1084589736917737522/1493371443445108857"
+LINK_RULES = "https://discord.com/channels/1084589736917737522/1493371304860979434"
+
+# Ghost Fleet GR brand colour (deep navy blue)
+BRAND_COLOR = 0x1E3A5F
 
 def load_config():
     global CHANNEL_IDS, ROLE_IDS, ORGANIZATION_NAME, TOURNAMENT_SYSTEM_NAME, BRACKET_LINK, BRACKET_API_KEY, GOOGLE_SHEET_LINK, CURRENT_TOURNAMENT_NAME
@@ -611,20 +619,23 @@ COMMAND_DATA = {
     }
 }
 
-def get_user_permission_level(user_roles) -> str:
+def get_user_permission_level(user_roles, user_id: int = None) -> str:
     """Determine user's permission level based on their Discord roles"""
     try:
+        # Bot owner ALWAYS gets owner level regardless of roles
+        if user_id and user_id == BOT_OWNER_ID:
+            return "owner"
+        
         role_ids = [role.id for role in user_roles]
         
-        # Check for bot owner
-        if BOT_OWNER_ID in role_ids:
-            return "owner"
-        elif ROLE_IDS["head_organizer"] in role_ids:
+        if ROLE_IDS["head_organizer"] in role_ids:
             return "organizer"
         elif ROLE_IDS["head_helper"] in role_ids or ROLE_IDS["helper_team"] in role_ids:
             return "helper"
         elif ROLE_IDS["judge"] in role_ids:
             return "judge"
+        elif ROLE_IDS["recorder"] in role_ids:
+            return "recorder"
         else:
             return "user"
     except Exception as e:
@@ -668,42 +679,52 @@ def filter_commands_by_permission(permission_level: str) -> dict:
         }
 
 def build_help_embed(permission_level: str, user_name: str, bot_icon_url: str = None, user_icon_url: str = None) -> discord.Embed:
-    """Build a comprehensive help embed based on user's permission level"""
+    """Build a comprehensive help embed based on user's permission level — Ghost Fleet GR styled"""
     try:
-        # Get filtered commands for this user
         filtered_commands = filter_commands_by_permission(permission_level)
-        
-        # Create main embed using Valorant red color
+
+        # Permission-level badge with emoji
+        badge_map = {
+            "owner":     "👑 Bot Owner",
+            "organizer": "🏛️ Organiser",
+            "helper":    "🛡️ Helper",
+            "judge":     "⚖️ Judge",
+            "recorder":  "🎥 Recorder",
+            "user":      "👤 Member",
+        }
+        badge = badge_map.get(permission_level, "👤 Member")
+
         embed = discord.Embed(
-            title=f"🎯 {ORGANIZATION_NAME} Tournament System",
-            description=f"**Command Guide** - Showing commands available to you\n*Permission Level: {permission_level.title()}*",
-            color=discord.Color(0xFF4655),
+            title=f"📖 Ghost Fleet GR — Command Centre",
+            description=(
+                f"**{TOURNAMENT_SYSTEM_NAME}**\n"
+                f"───────────────────────────\n"
+                f"🔰 **Access Level:** {badge}\n"
+                f"📌 **Bracket:** [View Live Bracket]({LINK_BRACKET})\n"
+                f"📅 **Deadlines:** [View Schedule]({LINK_DEADLINE})\n"
+                f"📜 **Rules:** [Read Rules]({LINK_RULES})"
+            ),
+            color=discord.Color(BRAND_COLOR),
             timestamp=discord.utils.utcnow()
         )
-        
+
         if bot_icon_url:
             embed.set_thumbnail(url=bot_icon_url)
-        
+
         # Add command categories
         for category_key, category_data in filtered_commands.items():
             commands_text = ""
-            
             for cmd in category_data["commands"]:
-                # Format command entry
-                commands_text += f"**{cmd['name']}**\n"
-                commands_text += f"└ {cmd['description']}\n"
-                commands_text += f"└ *Permissions: {cmd['permissions']}*\n"
-                if cmd.get('round_options'):
-                    commands_text += f"└ 🎯 **Round Options:** {cmd['round_options']}\n"
+                commands_text += f"`{cmd['name']}`  — {cmd['description']}\n"
+                commands_text += f"   ┣ 🔒 *{cmd['permissions']}*\n"
                 if cmd.get('example'):
-                    commands_text += f"└ 💡 {cmd['example']}\n"
-                commands_text += "\n"
-            
-            # Add field to embed (Discord has a 1024 character limit per field)
+                    commands_text += f"   ┗ 💡 *{cmd['example']}*\n"
+                else:
+                    commands_text += "\n"
+
+            # Chunk if over Discord field limit
             if len(commands_text) > 1024:
-                # Split long content into multiple fields
-                parts = []
-                current_part = ""
+                parts, current_part = [], ""
                 for line in commands_text.split('\n'):
                     if len(current_part + line + '\n') > 1024:
                         parts.append(current_part.strip())
@@ -712,30 +733,25 @@ def build_help_embed(permission_level: str, user_name: str, bot_icon_url: str = 
                         current_part += line + '\n'
                 if current_part.strip():
                     parts.append(current_part.strip())
-                
                 for i, part in enumerate(parts):
-                    field_name = category_data["title"] if i == 0 else f"{category_data['title']} (cont.)"
-                    embed.add_field(name=field_name, value=part, inline=False)
+                    fname = category_data["title"] if i == 0 else f"{category_data['title']} (cont.)"
+                    embed.add_field(name=fname, value=part, inline=False)
             else:
-                embed.add_field(
-                    name=category_data["title"],
-                    value=commands_text,
-                    inline=False
-                )
-        
+                embed.add_field(name=category_data["title"], value=commands_text, inline=False)
+
+        footer_text = f"{ORGANIZATION_NAME} • Help • {user_name}"
         if user_icon_url:
-            embed.set_footer(text=f"{ORGANIZATION_NAME} • Command Guide • Requested by {user_name}", icon_url=user_icon_url)
+            embed.set_footer(text=footer_text, icon_url=user_icon_url)
         else:
-            embed.set_footer(text=f"{ORGANIZATION_NAME} • Command Guide • Requested by {user_name}")
+            embed.set_footer(text=footer_text)
         return embed
-        
+
     except Exception as e:
         print(f"Error building help embed: {e}")
-        # Fallback embed
         embed = discord.Embed(
-            title="🎯 Command Guide",
+            title="📖 Command Guide",
             description="Error loading command information. Please try again.",
-            color=discord.Color.red(),
+            color=discord.Color(BRAND_COLOR),
             timestamp=discord.utils.utcnow()
         )
         embed.set_footer(text=f"{ORGANIZATION_NAME}")
@@ -993,7 +1009,7 @@ class TakeScheduleButton(View):
                 inline=True
             )
             
-            embed.set_footer(text="Judge Assignment • 😈The Devil's Spot😈")
+            embed.set_footer(text=f"Judge Assignment • {ORGANIZATION_NAME}")
             
             # Send notification to the event channel
             await self.event_channel.send(
@@ -1109,19 +1125,19 @@ async def display_rules(interaction: discord.Interaction):
                 color=discord.Color.orange(),
                 timestamp=discord.utils.utcnow()
             )
-            embed.set_footer(text="😈The Devil's Spot😈 Tournament System")
+            embed.set_footer(text=f"{ORGANIZATION_NAME} • Tournament System")
         else:
             embed = discord.Embed(
                 title="📋 Tournament Rules",
                 description=current_rules,
-                color=discord.Color.blue(),
+                color=discord.Color(BRAND_COLOR),
                 timestamp=discord.utils.utcnow()
             )
             
             # Add metadata if available
             if 'rules' in tournament_rules and 'last_updated' in tournament_rules['rules']:
                 updated_by = tournament_rules['rules'].get('updated_by', {}).get('username', 'Unknown')
-                embed.set_footer(text=f"😈The Devil's Spot😈 • Last updated by {updated_by}")
+                embed.set_footer(text=f"{ORGANIZATION_NAME} • Last updated by {updated_by}")
         
         await interaction.response.send_message(embed=embed, ephemeral=False)
         
@@ -1954,82 +1970,105 @@ async def on_ready():
 
 @tree.command(name="help", description="Show available commands based on your permissions")
 async def help_command(interaction: discord.Interaction):
-    """Enhanced help command with role-based filtering and detailed information"""
+    """Enhanced help command with role-based filtering — Ghost Fleet GR branded"""
     try:
-        # Determine user's permission level
-        permission_level = get_user_permission_level(interaction.user.roles)
+        # Bot owner always gets owner level
+        permission_level = get_user_permission_level(interaction.user.roles, interaction.user.id)
         
         bot_icon = interaction.client.user.display_avatar.url if interaction.client.user.display_avatar else None
         user_icon = interaction.user.display_avatar.url if interaction.user.display_avatar else None
         
-        # Build appropriate help embed
         embed = build_help_embed(permission_level, interaction.user.display_name, bot_icon_url=bot_icon, user_icon_url=user_icon)
-        
-        # Send public response
         await interaction.response.send_message(embed=embed, ephemeral=False)
         
     except Exception as e:
         print(f"Error in help command: {e}")
-        # Fallback response
         await interaction.response.send_message("❌ An error occurred while generating help.", ephemeral=True)
 
 @tree.command(name="staff-leaderboard", description="Display the staff activity leaderboard")
 async def staff_leaderboard(interaction: discord.Interaction):
-    """Command to display the staff activity leaderboard for judges and recorders"""
+    """Rich visual staff leaderboard — Ghost Fleet GR"""
     try:
         if not staff_stats:
-            await interaction.response.send_message("📊 The staff leaderboard is currently empty.", ephemeral=False)
+            embed = discord.Embed(
+                title="📊 Staff Leaderboard — Ghost Fleet GR",
+                description="No staff activity recorded yet. Stats will appear once matches are judged/recorded.",
+                color=discord.Color(BRAND_COLOR),
+                timestamp=discord.utils.utcnow()
+            )
+            embed.set_footer(text=f"{ORGANIZATION_NAME} • Staff Tracking")
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
-        # Sort staff by total count (judge + recorder)
+        # Sort by total (desc)
         sorted_staff = sorted(
-            staff_stats.items(), 
-            key=lambda item: item[1].get('total_count', 0), 
+            staff_stats.items(),
+            key=lambda item: item[1].get('total_count', 0),
             reverse=True
         )
-        
-        # Take top 15
         top_staff = sorted_staff[:15]
-        
-        # Build ASCII table
-        table_header = "Rank | Name            | Judge | Rec | Total"
-        table_separator = "-----|-----------------|-------|-----|------"
-        table_rows = []
-        
-        for i, (user_id, stats) in enumerate(top_staff, 1):
-            name = stats.get('name', 'Unknown')[:15].ljust(15)
-            judge = str(stats.get('judge_count', 0)).rjust(5)
-            rec = str(stats.get('recorder_count', 0)).rjust(3)
-            total = str(stats.get('total_count', 0)).rjust(4)
-            table_rows.append(f"{str(i).rjust(4)} | {name} | {judge} | {rec} | {total}")
-            
-        full_table = f"{table_header}\n{table_separator}\n" + "\n".join(table_rows)
-        
+
+        # Medal emojis for top 3
+        rank_emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
+
         embed = discord.Embed(
             title="🏆 Staff Activity Leaderboard",
-            description=f"Top {len(top_staff)} most active staff members:\n```\n{full_table}\n```",
+            description=(
+                f"**{ORGANIZATION_NAME}**\n"
+                "═══════════════════════════\n"
+                f"Tracking the top **{len(top_staff)}** most active staff this tournament season."
+            ),
             color=discord.Color.gold(),
             timestamp=discord.utils.utcnow()
         )
-        embed.set_footer(text="Devil-Bot Activity Tracking")
-        
-        # Check if user is Head Organizer to show reset button
+
+        # Build a clean visual list (two compact columns)
+        left_col  = ""
+        right_col = ""
+
+        for i, (user_id, stats) in enumerate(top_staff, 1):
+            medal   = rank_emojis.get(i, f"`#{i:>2}`")
+            name    = (stats.get('name') or 'Unknown')[:16]
+            j_cnt   = stats.get('judge_count', 0)
+            r_cnt   = stats.get('recorder_count', 0)
+            total   = stats.get('total_count', 0)
+            line = f"{medal} **{name}**\n⚖️ {j_cnt}  🎥 {r_cnt}  ✅ {total}\n"
+            if i % 2 == 1:
+                left_col += line
+            else:
+                right_col += line
+
+        if left_col:
+            embed.add_field(name="👥 Staff (odd)",  value=left_col,  inline=True)
+        if right_col:
+            embed.add_field(name="👥 Staff (even)", value=right_col, inline=True)
+
+        # Summary stats
+        total_matches = sum(s.get('total_count', 0) for _, s in top_staff)
+        total_judged  = sum(s.get('judge_count', 0) for _, s in top_staff)
+        total_rec     = sum(s.get('recorder_count', 0) for _, s in top_staff)
+        embed.add_field(
+            name="📈 Tournament Totals",
+            value=(
+                f"⚖️ **Total Judged:** {total_judged}\n"
+                f"🎥 **Total Recorded:** {total_rec}\n"
+                f"📊 **Combined Actions:** {total_matches}"
+            ),
+            inline=False
+        )
+
+        embed.set_footer(text=f"{ORGANIZATION_NAME} • Staff Leaderboard • ⚖️ Judge  🎥 Recorder  ✅ Total")
+
+        # Show reset button only to organiser / bot owner
+        is_owner = interaction.user.id == BOT_OWNER_ID
         head_organizer_role = discord.utils.get(interaction.user.roles, id=ROLE_IDS["head_organizer"])
-        view = JudgeLeaderboardView(show_reset=bool(head_organizer_role))
-        
+        view = JudgeLeaderboardView(show_reset=bool(head_organizer_role or is_owner))
+
         await interaction.response.send_message(embed=embed, view=view)
-        
+
     except Exception as e:
         print(f"Error in staff-leaderboard command: {e}")
         await interaction.response.send_message("❌ An error occurred while generating the leaderboard.", ephemeral=True)
-        embed = discord.Embed(
-            title="🎯 Command Guide",
-            description="Error loading command information. Please try again.",
-            color=discord.Color.red(),
-            timestamp=discord.utils.utcnow()
-        )
-        embed.set_footer(text=f"{ORGANIZATION_NAME}")
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @tree.command(name="info", description="Display bot information and statistics")
 async def info_command(interaction: discord.Interaction):
@@ -2630,24 +2669,32 @@ async def event_result(
 
     # Winner-only summary removed per request
     
-    # Post staff attendance in Staff Attendance channel
+    # Post staff attendance in Staff Attendance channel — Ghost Fleet GR styled
     try:
         staff_attendance_channel = interaction.guild.get_channel(CHANNEL_IDS["staff_attendance"])
         if staff_attendance_channel:
-            # Create staff attendance message
-            attendance_text = f"🏅 {winner.name} Vs {loser.name}\n"
-            attendance_text += f"**Round :** {round}\n"
-            
-            # Add group if specified
-            if group_label:
-                attendance_text += f"**Group :** {group_label}\n"
-            
-            attendance_text += f"\n**Results**\n"
-            attendance_text += f"🏆 {winner.name} ({winner_score}) Vs ({loser_score}) {loser.name} 💀\n\n"
-            attendance_text += f"**Staffs**\n"
-            attendance_text += f"• Judge: {interaction.user.mention}"
-            
-            await staff_attendance_channel.send(attendance_text)
+            att_embed = discord.Embed(
+                title="📋 Staff Attendance Log",
+                description=(
+                    f"🏅 **{winner.name}** vs **{loser.name}**\n"
+                    f"**Tournament:** {tournament}\n"
+                    f"**Round:** {round}"
+                    + (f"\n**Group:** {group_label}" if group_label else "")
+                ),
+                color=discord.Color(BRAND_COLOR),
+                timestamp=discord.utils.utcnow()
+            )
+            att_embed.add_field(
+                name="🏆 Result",
+                value=f"**Winner:** {winner.mention} `({winner_score})`\n**Loser:** {loser.mention} `({loser_score})`",
+                inline=False
+            )
+            staff_val = f"⚖️ **Judge:** {interaction.user.mention}"
+            if recorder:
+                staff_val += f"\n🎥 **Recorder:** {recorder.mention}"
+            att_embed.add_field(name="👥 Staff on Duty", value=staff_val, inline=False)
+            att_embed.set_footer(text=f"{ORGANIZATION_NAME} • Attendance")
+            await staff_attendance_channel.send(embed=att_embed)
         else:
             print("⚠️ Could not find Staff Attendance channel.")
     except Exception as e:
@@ -2781,7 +2828,7 @@ async def time(interaction: discord.Interaction):
         inline=False
     )
                     
-    embed.set_footer(text="Match Time Generator • 😈The Devil's Spot😈")
+    embed.set_footer(text=f"Match Time Generator • {ORGANIZATION_NAME}")
     
     await interaction.response.send_message(embed=embed)
 
@@ -2980,7 +3027,7 @@ async def event_delete(interaction: discord.Interaction):
                     inline=False
                 )
                 
-                embed.set_footer(text="Event Management • 😈The Devil's Spot😈")
+                embed.set_footer(text=f"Event Management • {ORGANIZATION_NAME}")
                 
                 await select_interaction.response.edit_message(embed=embed, view=None)
         
@@ -2998,7 +3045,7 @@ async def event_delete(interaction: discord.Interaction):
             inline=False
         )
         
-        embed.set_footer(text="Event Management • 😈The Devil's Spot😈")
+        embed.set_footer(text=f"Event Management • {ORGANIZATION_NAME}")
         
         view = EventDeleteView()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -3672,18 +3719,18 @@ async def add_captain(interaction: discord.Interaction, round: str, captain1: di
         except discord.HTTPException as e:
             await interaction.followup.send(f"⚠️ Channel renamed but error adding captains: {e}", ephemeral=True)
         
-        # Send tournament rules message (same template as tournament-start)
+        # Send tournament rules message — Ghost Fleet GR branded
         rules_embed = discord.Embed(
-            title="🏆 Tournament Match Setup",
-            description="Please use this channel for all tournament discussions.",
-            color=0x00ff00
+            title="⚓ Ghost Fleet GR — Match Setup",
+            description="Welcome to your match channel. Use this channel for all tournament discussions.",
+            color=discord.Color(BRAND_COLOR)
         )
         rules_embed.add_field(
             name="📋 Tournament Information",
             value=(
-                "• Refer to https://discord.com/channels/1457365014506901568/1492565975847932104 for match schedules and pairings.\n"
-                "• Refer to https://discord.com/channels/1457365014506901568/1492564923031748688 for official updates.\n"
-                "• Refer to https://discord.com/channels/1457365014506901568/1492565754137149491 for tournament guidelines and regulations."
+                f"• 🏆 [Live Bracket]({LINK_BRACKET}) — View current standings\n"
+                f"• ⏰ [Match Deadlines]({LINK_DEADLINE}) — Schedule & timings\n"
+                f"• 📜 [Tournament Rules]({LINK_RULES}) — Read before playing"
             ),
             inline=False
         )
@@ -3694,23 +3741,31 @@ async def add_captain(interaction: discord.Interaction, round: str, captain1: di
         )
         rules_embed.add_field(
             name="🆘 Need Help?",
-            value=f"If you require any assistance, please ping <@&{ROLE_IDS['helper_team']}> and they will be happy to assist.",
+            value=f"Ping <@&{ROLE_IDS['helper_team']}> and a staff member will assist you.",
             inline=False
         )
         rules_embed.add_field(
-            name="🤝 Cooperation",
-            value="We appreciate your cooperation and wish you a competitive and fair tournament.",
+            name="🤝 Fair Play",
+            value="We appreciate your cooperation. Good luck and have fun! ⚓",
             inline=False
         )
-        rules_embed.set_footer(text=f"{ORGANIZATION_NAME} | {interaction.user.name} ✰—• • {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}")
+        rules_embed.set_footer(text=f"{ORGANIZATION_NAME} | Setup by {interaction.user.name} • {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}")
         try:
-            with open("Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "rb") as logo_file:
-                logo_data = io.BytesIO(logo_file.read())
-                logo_file = discord.File(logo_data, filename="logo.png")
-                rules_embed.set_thumbnail(url="attachment://logo.png")
-                await channel.send(embed=rules_embed, file=logo_file)
-        except FileNotFoundError:
-            await channel.send(embed=rules_embed)
+            logo_candidates = ["Ghost Fleet GR logo.png", "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "logo.png"]
+            logo_sent = False
+            for logo_path in logo_candidates:
+                try:
+                    with open(logo_path, "rb") as logo_file:
+                        logo_data = io.BytesIO(logo_file.read())
+                        lf = discord.File(logo_data, filename="logo.png")
+                        rules_embed.set_thumbnail(url="attachment://logo.png")
+                        await channel.send(embed=rules_embed, file=lf)
+                        logo_sent = True
+                        break
+                except FileNotFoundError:
+                    continue
+            if not logo_sent:
+                await channel.send(embed=rules_embed)
         except Exception as e:
             print(f"Warning: Could not send logo: {e}")
             await channel.send(embed=rules_embed)
@@ -3922,18 +3977,18 @@ async def tournament_start(interaction: discord.Interaction, tournament_name: Op
 
             created_channels.append(new_ch.mention)
 
-            # Build match setup embed
+            # Build match setup embed — Ghost Fleet GR branded
             rules_embed = discord.Embed(
-                title="🏆 Tournament Match Setup",
-                description="Please use this channel for all tournament discussions.",
-                color=0x00ff00
+                title="⚓ Ghost Fleet GR — Match Setup",
+                description="Welcome to your match channel. Use this channel for all tournament discussions.",
+                color=discord.Color(BRAND_COLOR)
             )
             rules_embed.add_field(
                 name="📋 Tournament Information",
                 value=(
-                    "• Refer to <#1175583664290144306> for match schedules and pairings.\n"
-                    "• Refer to <#1175583555888361472> for official updates.\n"
-                    "• Refer to <#1175583783962021998> for tournament guidelines and regulations."
+                    f"• 🏆 [Live Bracket]({LINK_BRACKET}) — View current standings\n"
+                    f"• ⏰ [Match Deadlines]({LINK_DEADLINE}) — Schedule & timings\n"
+                    f"• 📜 [Tournament Rules]({LINK_RULES}) — Read before playing"
                 ),
                 inline=False
             )
@@ -3954,16 +4009,16 @@ async def tournament_start(interaction: discord.Interaction, tournament_name: Op
             rules_embed.add_field(name="👥 Match Participants", value=pval, inline=False)
             rules_embed.add_field(
                 name="🆘 Need Help?",
-                value=f"If you require any assistance, please ping {helper_team_role.mention if helper_team_role else '@Helper Team'} and they will be happy to assist.",
+                value=f"Ping {helper_team_role.mention if helper_team_role else '@Helper Team'} and a staff member will assist you.",
                 inline=False
             )
             rules_embed.add_field(
-                name="🤝 Cooperation",
-                value="We appreciate your cooperation and wish you a competitive and fair tournament.",
+                name="🤝 Fair Play",
+                value="We appreciate your cooperation. Good luck and have fun! ⚓",
                 inline=False
             )
             rules_embed.set_footer(
-                text=f"{ORGANIZATION_NAME} | {interaction.user.name} ✰—• • {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}"
+                text=f"{ORGANIZATION_NAME} | {interaction.user.name} • {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}"
             )
 
             ping_content = " ".join(filter(None, [
@@ -3971,16 +4026,23 @@ async def tournament_start(interaction: discord.Interaction, tournament_name: Op
                 captain2.mention if captain2 else (c2_raw or None),
             ])) or f"{team1} vs {team2}"
 
-            try:
-                with open("Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "rb") as lf:
-                    ld = io.BytesIO(lf.read())
-                    lf2 = discord.File(ld, filename="logo.png")
-                    rules_embed.set_thumbnail(url="attachment://logo.png")
-                    await new_ch.send(content=ping_content, embed=rules_embed, file=lf2)
-            except FileNotFoundError:
-                await new_ch.send(content=ping_content, embed=rules_embed)
-            except Exception as logo_e:
-                print(f"[tournament-start] Logo error: {logo_e}")
+            logo_candidates_ts = ["Ghost Fleet GR logo.png", "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "logo.png"]
+            sent_logo = False
+            for lp in logo_candidates_ts:
+                try:
+                    with open(lp, "rb") as lf:
+                        ld = io.BytesIO(lf.read())
+                        lf2 = discord.File(ld, filename="logo.png")
+                        rules_embed.set_thumbnail(url="attachment://logo.png")
+                        await new_ch.send(content=ping_content, embed=rules_embed, file=lf2)
+                        sent_logo = True
+                        break
+                except FileNotFoundError:
+                    continue
+                except Exception as logo_e:
+                    print(f"[tournament-start] Logo error: {logo_e}")
+                    break
+            if not sent_logo:
                 await new_ch.send(content=ping_content, embed=rules_embed)
 
         except Exception as ch_e:
@@ -4198,7 +4260,7 @@ class RulesModal(discord.ui.Modal, title='Publish Tournament Rules'):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        channel_id = 1175583783962021998
+        channel_id = CHANNEL_IDS.get("rules", 1493371304860979434)
         channel = interaction.guild.get_channel(channel_id)
         if not channel:
             await interaction.response.send_message(f"❌ Could not find the Rules channel (ID: {channel_id}). Please check the ID.", ephemeral=True)
@@ -4338,13 +4400,17 @@ async def auto_create_open_tickets(guild: discord.Guild, user: discord.Member):
             )
 
             rules_embed = discord.Embed(
-                title="🏆 Tournament Match Setup",
-                description="Please use this channel for all tournament discussions.",
-                color=0x00ff00
+                title="⚓ Ghost Fleet GR — Match Setup",
+                description="Welcome to your match channel. Use this channel for all tournament discussions.",
+                color=discord.Color(BRAND_COLOR)
             )
             rules_embed.add_field(
                 name="📋 Tournament Information",
-                value="• Refer to <#1175583664290144306> for match schedules and pairings.\n• Refer to <#1175583555888361472> for official updates.\n• Refer to <#1175583783962021998> for tournament guidelines and regulations.",
+                value=(
+                    f"• 🏆 [Live Bracket]({LINK_BRACKET})\n"
+                    f"• ⏰ [Deadlines]({LINK_DEADLINE})\n"
+                    f"• 📜 [Rules]({LINK_RULES})"
+                ),
                 inline=False
             )
             
@@ -4356,20 +4422,30 @@ async def auto_create_open_tickets(guild: discord.Guild, user: discord.Member):
             rules_embed.add_field(name="👥 Match Participants", value=pval, inline=False)
             rules_embed.add_field(
                 name="🆘 Need Help?",
-                value=f"If you require any assistance, please ping {helper_team_role.mention if helper_team_role else '@Helper Team'}.",
+                value=f"Ping {helper_team_role.mention if helper_team_role else '@Helper Team'} for assistance. ⚓",
                 inline=False
             )
+            rules_embed.set_footer(text=f"{ORGANIZATION_NAME} • Auto-Ticket")
 
             ping_content = " ".join(filter(None, [
                 captain1.mention if captain1 else (c1_raw or None),
                 captain2.mention if captain2 else (c2_raw or None),
             ])) or f"{team1} vs {team2}"
 
-            try:
-                with open("Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "rb") as lf:
-                    rules_embed.set_thumbnail(url="attachment://logo.png")
-                    await new_ch.send(content=ping_content, embed=rules_embed, file=discord.File(io.BytesIO(lf.read()), "logo.png"))
-            except Exception:
+            logo_candidates_at = ["Ghost Fleet GR logo.png", "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "logo.png"]
+            sent_at = False
+            for lp_at in logo_candidates_at:
+                try:
+                    with open(lp_at, "rb") as lf:
+                        rules_embed.set_thumbnail(url="attachment://logo.png")
+                        await new_ch.send(content=ping_content, embed=rules_embed, file=discord.File(io.BytesIO(lf.read()), "logo.png"))
+                        sent_at = True
+                        break
+                except FileNotFoundError:
+                    continue
+                except Exception:
+                    break
+            if not sent_at:
                 await new_ch.send(content=ping_content, embed=rules_embed)
 
         except Exception as e:
