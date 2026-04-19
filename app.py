@@ -1819,26 +1819,68 @@ async def on_message(message):
             
         if command == '$close':
             try:
+                # Check category constraint
+                if message.channel.category_id not in [CHANNEL_IDS.get("category_1"), CHANNEL_IDS.get("category_2")]:
+                    try:
+                        await message.delete()
+                    except:
+                        pass
+                    return
+                
                 closed_category_id = CHANNEL_IDS.get("closed_tickets_category", 1492915418556268605)
                 closed_category = message.guild.get_channel(closed_category_id)
+                
+                # Create Transcript
+                await message.channel.send("⏳ Generating transcript, please wait...")
+                transcript_lines = []
+                async for m in message.channel.history(limit=1000, oldest_first=True):
+                    time_str = m.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                    content = m.clean_content or "[Attachment/Embed]"
+                    transcript_lines.append(f"[{time_str}] {m.author.display_name}: {content}")
+                
+                transcript_content = "\n".join(transcript_lines)
+                
+                # Send to current channel
+                transcript_file_local = discord.File(io.BytesIO(transcript_content.encode('utf-8')), filename=f"transcript_{message.channel.name}.txt")
+                await message.channel.send(f"📄 Transcript of this ticket:", file=transcript_file_local)
+                
+                # Also send to transcript record channel
+                transcript_channel = message.guild.get_channel(1495225995815289054)
+                if transcript_channel:
+                    transcript_file_record = discord.File(io.BytesIO(transcript_content.encode('utf-8')), filename=f"transcript_{message.channel.name}.txt")
+                    await transcript_channel.send(f"📋 Transcript for closed ticket `{message.channel.name}` (closed by {message.author.display_name}):", file=transcript_file_record)
+                
                 if closed_category:
                     await message.channel.edit(
                         category=closed_category,
                         sync_permissions=True,
                         reason=f"Ticket closed by {message.author.name}"
                     )
-                    await message.channel.send("🔒 Ticket closed and moved to the closed category.")
+                    await message.channel.send("🔒 Ticket closed and moved to the closed category. Use `$delete` to permanently delete it.")
                 else:
                     await message.channel.send("❌ Closed ticket category not found.")
                 
-                try:
-                    await message.delete()
-                except discord.Forbidden:
-                    pass
             except discord.Forbidden:
                 pass
             except Exception as e:
                 print(f"Error closing ticket: {e}")
+            return
+            
+        elif command == '$delete':
+            try:
+                allowed_cats = [
+                    CHANNEL_IDS.get("category_1"), 
+                    CHANNEL_IDS.get("category_2"), 
+                    CHANNEL_IDS.get("closed_tickets_category", 1492915418556268605)
+                ]
+                if message.channel.category_id in allowed_cats:
+                    await message.channel.delete(reason=f"Ticket deleted by {message.author.name}")
+                else:
+                    await message.channel.send("❌ This command can only be used in ticket categories.")
+            except discord.Forbidden:
+                await message.channel.send("❌ I don't have permission to delete this channel.")
+            except Exception as e:
+                print(f"Error deleting ticket: {e}")
             return
 
         try:
@@ -1965,6 +2007,11 @@ async def on_ready():
         print("⚠️ Bot will continue running without command sync")
     
     print("🎯 Bot is ready to receive commands!")
+
+@tree.command(name="rules", description="Display the tournament rules")
+async def rules_command(interaction: discord.Interaction):
+    """View tournament rules"""
+    await display_rules(interaction)
 
 @tree.command(name="help", description="Show available commands based on your permissions")
 async def help_command(interaction: discord.Interaction):
@@ -2664,6 +2711,22 @@ async def event_result(
                 await current_channel.send(embed=embed)
     except Exception as e:
         await interaction.followup.send(f"⚠️ Could not post in current channel: {e}", ephemeral=True)
+
+    # Post to additional channel (1495225995815289054)
+    try:
+        extra_channel = interaction.guild.get_channel(1495225995815289054)
+        if extra_channel:
+            if files_to_send:
+                extra_files = []
+                for file_obj in files_to_send:
+                    file_obj.fp.seek(0)
+                    file_data = file_obj.fp.read()
+                    extra_files.append(discord.File(fp=io.BytesIO(file_data), filename=file_obj.filename))
+                await extra_channel.send(content="**Result Copy**", embed=embed, files=extra_files)
+            else:
+                await extra_channel.send(content="**Result Copy**", embed=embed)
+    except Exception as e:
+        print(f"⚠️ Could not post in extra channel: {e}")
 
     # Winner-only summary removed per request
     
