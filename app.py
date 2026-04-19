@@ -557,11 +557,11 @@ COMMAND_DATA = {
                 "example": "Use `/event-delete` and select from scheduled events to remove"
             },
             {
-                "name": "/unassigned_events",
+                "name": "/available_events",
                 "description": "List all events without a judge assigned for easy management",
-                "usage": "/unassigned_events",
+                "usage": "/available_events",
                 "permissions": "head_organizer / head_helper / helper_team / judge",
-                "example": "Use `/unassigned_events` to see which matches still need judges"
+                "example": "Use `/available_events` to see which matches still need judges"
             },
             {
                 "name": "/exchange",
@@ -598,11 +598,18 @@ COMMAND_DATA = {
                 "example": "Look for green 'Take Schedule' buttons in the schedule channel"
             },
             {
-                "name": "/unassign",
-                "description": "Unassign yourself from a scheduled event",
-                "usage": "/unassign",
+                "name": "/unassigned_events",
+                "description": "Unassign yourself from a scheduled event you previously took",
+                "usage": "/unassigned_events",
                 "permissions": "judge / head_organizer",
-                "example": "Use `/unassign` to remove yourself from a match you can no longer judge"
+                "example": "Use `/unassigned_events` to drop a match you can no longer judge"
+            },
+            {
+                "name": "/available_events",
+                "description": "View events without assigned judges to help with scheduling",
+                "usage": "/available_events",
+                "permissions": "judge / head_organizer",
+                "example": "Use `/available_events` to see which matches need judges"
             },
             {
                 "name": "/event-result",
@@ -612,13 +619,6 @@ COMMAND_DATA = {
                 "example": "Use after completing a match you judged to record the official result with group information and evidence",
                 "round_options": "R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, Qualifier, Semi Final, 3rd Place, Final",
                 "group_options": "Group A, Group B, Group C, Group D, Group E, Group F, Group G, Group H, Group I, Group J"
-            },
-            {
-                "name": "/unassigned_events",
-                "description": "View events without assigned judges to help with scheduling",
-                "usage": "/unassigned_events",
-                "permissions": "judge / head_organizer",
-                "example": "Use `/unassigned_events` to see which matches need judges"
             }
         ]
     }
@@ -2725,7 +2725,7 @@ async def event_result(
     # Post in current channel (where command was executed)
     try:
         current_channel = interaction.channel
-        if current_channel and current_channel.id != CHANNEL_IDS["results"]:  # Don't duplicate if already in results channel
+        if current_channel and current_channel.id != CHANNEL_IDS["results"] and current_channel.id != CHANNEL_IDS.get("take_schedule"):  # Don't duplicate or post in schedule channel
             if files_to_send:
                 # Reset file pointers and create new file objects for current channel
                 current_files = []
@@ -2917,8 +2917,8 @@ async def time(interaction: discord.Interaction):
 ## Removed test-poster command per request
 
 
-@tree.command(name="unassigned_events", description="List events without a judge assigned (Judges/Organizers)")
-async def unassigned_events(interaction: discord.Interaction):
+@tree.command(name="available_events", description="List events without a judge assigned (Judges/Organizers)")
+async def available_events(interaction: discord.Interaction):
     """Show all scheduled events that do not currently have a judge assigned."""
     try:
         # Allow Head Organizer, Head Helper, Helper Team, and Judges to view
@@ -2950,7 +2950,7 @@ async def unassigned_events(interaction: discord.Interaction):
 
         # Create embed summary
         embed = discord.Embed(
-            title="📝 Unassigned Events",
+            title="📝 Available Events",
             description="Events without a judge. Use the message link to take the schedule.",
             color=discord.Color.orange(),
             timestamp=discord.utils.utcnow()
@@ -2992,14 +2992,14 @@ async def unassigned_events(interaction: discord.Interaction):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
     except Exception as e:
-        print(f"Error in unassigned_events: {e}")
+        print(f"Error in available_events: {e}")
         try:
-            await interaction.response.send_message("❌ An error occurred while fetching unassigned events.", ephemeral=True)
+            await interaction.response.send_message("❌ An error occurred while fetching available events.", ephemeral=True)
         except Exception:
             pass
 
-@tree.command(name="unassign", description="Unassign yourself from a scheduled event (Judge only)")
-async def unassign_command(interaction: discord.Interaction):
+@tree.command(name="unassigned_events", description="Unassign yourself from a scheduled event (Judge only)")
+async def unassigned_events_command(interaction: discord.Interaction):
     """Unassign judge from match"""
     permission_level = get_user_permission_level(interaction.user.roles, interaction.user.id)
     if permission_level not in ["judge", "organizer", "owner", "helper"]:
