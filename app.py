@@ -598,6 +598,13 @@ COMMAND_DATA = {
                 "example": "Look for green 'Take Schedule' buttons in the schedule channel"
             },
             {
+                "name": "/unassign",
+                "description": "Unassign yourself from a scheduled event",
+                "usage": "/unassign",
+                "permissions": "judge / head_organizer",
+                "example": "Use `/unassign` to remove yourself from a match you can no longer judge"
+            },
+            {
                 "name": "/event-result",
                 "description": "Record official match results with Group support and comprehensive tracking",
                 "usage": "/event-result winner:<@user> winner_score:<score> loser:<@user> loser_score:<score> tournament:<name> round:<round> [group:<A-J>] [remarks:<text>] [screenshots:<1-11>]",
@@ -1242,10 +1249,15 @@ async def send_ten_minute_reminder(event_id: str, team1_captain: discord.Member,
         embed.add_field(name="� ActAion Required", value="Please prepare for the match and join the designated channel.", inline=False)
         embed.set_footer(text="Tournament Management System")
 
+        # Get correct IDs formatting defensively
+        t1_id = getattr(resolved_team1_captain, 'id', resolved_team1_captain)
+        t2_id = getattr(resolved_team2_captain, 'id', resolved_team2_captain)
+        j_id = getattr(resolved_judge, 'id', resolved_judge) if resolved_judge else None
+
         # Send notification with pings
-        pings = f"<@{resolved_team1_captain.id}> <@{resolved_team2_captain.id}>"
-        if resolved_judge:
-            pings = f"<@{resolved_judge.id}> " + pings
+        pings = f"<@{t1_id}> <@{t2_id}>"
+        if j_id:
+            pings = f"<@{j_id}> " + pings
         notification_text = f"🔔 **MATCH REMINDER**\n\n{pings}\n\nYour match starts in **10 minutes**!"
 
         await event_channel.send(content=notification_text, embed=embed)
@@ -1522,7 +1534,7 @@ def get_random_template():
             return random.choice(image_files)
     return None
 
-def create_event_poster(template_path: str, round_label: str, team1_captain: str, team2_captain: str, utc_time: str, date_str: str = None, server_name: str = "The Devil's Spot") -> str:
+def create_event_poster(template_path: str, round_label: str, team1_captain: str, team2_captain: str, utc_time: str, date_str: str = None, server_name: str = "GhostFleet-GR") -> str:
     """Create event poster with text overlays using Google Fonts and improved error handling"""
     print(f"Creating poster with template: {template_path}")
     
@@ -1969,6 +1981,27 @@ async def on_ready():
     
     # Load staff stats from file
     load_staff_stats()
+    
+    # Reschedule reminders for loaded events
+    import pytz
+    now_utc = datetime.datetime.now(pytz.UTC)
+    for ev_id, ev_data in scheduled_events.items():
+        dt = ev_data.get('datetime')
+        ch_id = ev_data.get('channel_id')
+        if dt and ch_id:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=pytz.UTC)
+            if dt > now_utc:
+                channel = bot.get_channel(ch_id)
+                if channel:
+                    asyncio.create_task(schedule_ten_minute_reminder(
+                        ev_id, 
+                        ev_data.get('team1_captain'), 
+                        ev_data.get('team2_captain'), 
+                        ev_data.get('judge'), 
+                        channel, 
+                        dt
+                    ))
     
     # Reschedule cleanups for any events already marked finished_on if needed (optional)
     try:
@@ -2712,21 +2745,6 @@ async def event_result(
     except Exception as e:
         await interaction.followup.send(f"⚠️ Could not post in current channel: {e}", ephemeral=True)
 
-    # Post to additional channel (1495225995815289054)
-    try:
-        extra_channel = interaction.guild.get_channel(1495225995815289054)
-        if extra_channel:
-            if files_to_send:
-                extra_files = []
-                for file_obj in files_to_send:
-                    file_obj.fp.seek(0)
-                    file_data = file_obj.fp.read()
-                    extra_files.append(discord.File(fp=io.BytesIO(file_data), filename=file_obj.filename))
-                await extra_channel.send(content="**Result Copy**", embed=embed, files=extra_files)
-            else:
-                await extra_channel.send(content="**Result Copy**", embed=embed)
-    except Exception as e:
-        print(f"⚠️ Could not post in extra channel: {e}")
 
     # Winner-only summary removed per request
     
@@ -2976,6 +2994,100 @@ async def unassigned_events(interaction: discord.Interaction):
             await interaction.response.send_message("❌ An error occurred while fetching unassigned events.", ephemeral=True)
         except Exception:
             pass
+
+@tree.command(name="unassign", description="Unassign yourself from a scheduled event (Judge only)")
+async def unassign_command(interaction: discord.Interaction):
+    """Unassign judge from match"""
+    permission_level = get_user_permission_level(interaction.user.roles, interaction.user.id)
+    if permission_level not in ["judge", "organizer", "owner", "helper"]:
+        await interaction.response.send_message("❌ You do not have permission to unassign events.", ephemeral=True)
+        return
+
+    # Find events the user is judging
+    user_events = []
+    for event_id, event_data in scheduled_events.items():
+        judge_val = event_data.get('judge')
+        # Check if the judge ID matches the user
+        if judge_val and getattr(judge_val, 'id', judge_val) == interaction.user.id:
+            user_events.append((event_id, event_data))
+    
+    if not user_events:
+        await interaction.response.send_message("❌ You are not assigned to any events.", ephemeral=True)
+        return
+
+    class EventUnassignView(View):
+        def __init__(self):
+            super().__init__(timeout=120)
+            
+        @discord.ui.select(
+            placeholder="Select an event to unassign from...",
+            options=[
+                discord.SelectOption(
+                    label=f"Match {idx+1}: {event_data.get('round', 'Round')}",
+                    description=f"{event_data.get('date_str', 'Date')} at {event_data.get('time_str', 'Time')}",
+                    value=event_id
+                )
+                for idx, (event_id, event_data) in enumerate(user_events[:25])
+            ]
+        )
+        async def select_event(self, select_interaction: discord.Interaction, select: discord.ui.Select):
+            selected_event_id = select.values[0]
+            event_data = scheduled_events[selected_event_id]
+            
+            # Check 20 minute rule
+            dt = event_data.get('datetime')
+            if dt:
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=pytz.UTC)
+                
+                time_until = dt - datetime.datetime.now(pytz.UTC)
+                if time_until.total_seconds() < 20 * 60 and time_until.total_seconds() > 0:
+                    await select_interaction.response.send_message("❌ You cannot unassign from an event that starts in less than 20 minutes.", ephemeral=True)
+                    return
+            
+            # Remove judge
+            event_data['judge'] = None
+            if interaction.user.id in judge_assignments and selected_event_id in judge_assignments[interaction.user.id]:
+                judge_assignments[interaction.user.id].remove(selected_event_id)
+            save_scheduled_events()
+            
+            # Update embed to remove judge
+            channel_id = event_data.get('channel_id')
+            msg_id = event_data.get('schedule_message_id')
+            
+            if channel_id and msg_id:
+                try:
+                    channel = bot.get_channel(channel_id)
+                    if channel:
+                        msg = await channel.fetch_message(msg_id)
+                        if msg and msg.embeds:
+                            embed = msg.embeds[0]
+                            # Remove the judge field
+                            for i, field in enumerate(embed.fields):
+                                if field.name == "👨‍⚖️ Judge":
+                                    embed.remove_field(i)
+                                    break
+                            
+                            # Reconstruct the view with Take Schedule button
+                            # Using the original view class
+                            t1 = event_data.get('team1_captain')
+                            t2 = event_data.get('team2_captain')
+                            new_view = TakeScheduleButton(selected_event_id, t1, t2, channel)
+
+                            await msg.edit(embed=embed, view=new_view)
+                            
+                            # Ping in channel
+                            t1_id = getattr(t1, 'id', t1) if t1 else 'TBD'
+                            t2_id = getattr(t2, 'id', t2) if t2 else 'TBD'
+                            
+                            await channel.send(f"⚠️ <@&{ROLE_IDS['judge']}> The assigned judge has unassigned. Please Take Schedule for the match <@{t1_id}> vs <@{t2_id}>!")
+                except Exception as e:
+                    print(f"Failed to update message: {e}")
+
+            await select_interaction.response.send_message(f"✅ Successfully unassigned from event.", ephemeral=True)
+            self.stop()
+            
+    await interaction.response.send_message("Select the event you want to unassign yourself from:", view=EventUnassignView(), ephemeral=True)
 
 @tree.command(name="event-delete", description="Delete a scheduled event (Head Organizer/Head Helper/Helper Team only)")
 async def event_delete(interaction: discord.Interaction):
@@ -3812,7 +3924,7 @@ async def add_captain(interaction: discord.Interaction, round: str, captain1: di
         )
         rules_embed.set_footer(text=f"{ORGANIZATION_NAME} | Setup by {interaction.user.name} • {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}")
         try:
-            logo_candidates = ["Ghost Fleet GR logo.png", "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "logo.png"]
+            logo_candidates = ["Ghost Fleet GR logo.png", "logo.png"]
             logo_sent = False
             for logo_path in logo_candidates:
                 try:
@@ -4087,7 +4199,7 @@ async def tournament_start(interaction: discord.Interaction, tournament_name: Op
                 captain2.mention if captain2 else (c2_raw or None),
             ])) or f"{team1} vs {team2}"
 
-            logo_candidates_ts = ["Ghost Fleet GR logo.png", "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "logo.png"]
+            logo_candidates_ts = ["Ghost Fleet GR logo.png", "logo.png"]
             sent_logo = False
             for lp in logo_candidates_ts:
                 try:
@@ -4493,7 +4605,7 @@ async def auto_create_open_tickets(guild: discord.Guild, user: discord.Member):
                 captain2.mention if captain2 else (c2_raw or None),
             ])) or f"{team1} vs {team2}"
 
-            logo_candidates_at = ["Ghost Fleet GR logo.png", "Vᴀʟᴏʀᴀɴᴛ Vᴀɴɢᴜᴀʀᴅ E-ꜱᴩᴏʀᴛꜱ logo.png", "logo.png"]
+            logo_candidates_at = ["Ghost Fleet GR logo.png", "logo.png"]
             sent_at = False
             for lp_at in logo_candidates_at:
                 try:
