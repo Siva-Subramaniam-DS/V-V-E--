@@ -45,7 +45,7 @@ except Exception as e:
 # Default Configs — Ghost Fleet GR
 DEFAULT_CHANNEL_IDS = {
     "take_schedule": 1493422902547185705,   # TAKE SCHEDULE
-    "results": 1493422902547185705,         # MATCH RESULT (reuse take_schedule until dedicated is set)
+    "results": 1495225995815289054,         # MATCH RESULT (reuse take_schedule until dedicated is set)
     "transcript": 1493422861405388950,      # TOUR SUPPORT TICKET (transcript)
     "staff_attendance": 1493423298724233287, # ATTENDANCE
     "announcement": 1493371443445108857,    # DEADLINES channel (closest to announcement)
